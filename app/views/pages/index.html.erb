@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>CI Monitor</title>
+    <%= action_cable_meta_tag %>
+    <%= javascript_include_tag "actioncable" %>
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: #000;
+        color: #fff;
+        font-family: sans-serif;
+        height: 100%;
+        width: 100%;
+        overflow: hidden;
+      }
+
+      #repos {
+        display: flex;
+        flex-direction: row;
+        width: 100vw;
+        height: 100vh;
+      }
+
+      .repo {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        transition: background-color 0.3s;
+      }
+
+      .repo-name {
+        font-size: 4vw;
+        font-weight: bold;
+        margin-bottom: 1rem;
+      }
+
+      .repo-link {
+        font-size: 1.5vw;
+        color: #ccc;
+        text-decoration: underline;
+      }
+
+      .bg-running {
+        background-color: #665c00; /* dark yellow */
+      }
+
+      .bg-success {
+        background-color: #004d1a; /* dark green */
+      }
+
+      .bg-failure {
+        background-color: #4d0000; /* dark red */
+      }
+
+      #placeholder {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 3vw;
+        color: #666;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="placeholder">WAITING FOR BUILD…</div>
+    <div id="repos"></div>
+
+    <script>
+      const placeholderEl = document.getElementById("placeholder");
+      const cable = ActionCable.createConsumer();
+      const reposEl = document.getElementById("repos");
+      const repoElements = {};
+
+      function getStatusClass(status, conclusion) {
+        if (status === "in_progress" || status === "queued") return "bg-running";
+        if (conclusion === "success") return "bg-success";
+        if (conclusion === "failure") return "bg-failure";
+        return "bg-running"; // fallback to yellow for unknown states
+      }
+
+      function extractCommitTitle(message) {
+        return message.split("\n")[0];
+      }
+
+      function updateRepoView(data) {
+        if (placeholderEl) {
+          placeholderEl.remove();
+        }
+        const { repo, url, status, conclusion, commit, commit_url } = data;
+        let statusText;
+        if (status === "queued") {
+          statusText = "queued";
+        } else if (status === "in_progress") {
+          statusText = "in progress";
+        } else {
+          statusText = "completed";
+        }
+        const cssClass = getStatusClass(status, conclusion);
+        const commitTitle = extractCommitTitle(commit);
+
+        let el = repoElements[repo];
+
+        if (!el) {
+          el = document.createElement("div");
+          el.className = `repo ${cssClass}`;
+          el.innerHTML = `
+            <div class="repo-name">${repo}</div>
+            <a class="commit-title repo-link" href="${commit_url}" target="_blank">${commitTitle}</a>
+            <a class="repo-link run-link" href="${url}" target="_blank">${statusText}</a>
+          `;
+          reposEl.appendChild(el);
+          repoElements[repo] = el;
+        } else {
+          el.className = `repo ${cssClass}`;
+          el.querySelector(".commit-title").href = commit_url;
+          el.querySelector(".commit-title").textContent = commitTitle;
+          el.querySelector(".commit-title").href = commit_url;
+          el.querySelector(".commit-title").textContent = commitTitle;
+
+          const runLink = el.querySelector(".run-link");
+          runLink.href = url;
+          runLink.textContent = statusText;
+        }
+      }
+
+      cable.subscriptions.create("CiChannel", {
+        received(data) {
+          updateRepoView(data);
+        }
+      });
+    </script>
+  </body>
+</html>
