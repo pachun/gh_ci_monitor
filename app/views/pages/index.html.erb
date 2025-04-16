@@ -98,7 +98,11 @@
       }
 
       function updateTimer(repoKey, startTime, targetEl) {
-        if (repoTimers[repoKey]?.interval) {
+        if (!repoTimers[repoKey]) {
+          repoTimers[repoKey] = {}; // ← initialize first
+        }
+
+        if (repoTimers[repoKey].interval) {
           clearInterval(repoTimers[repoKey].interval);
         }
 
@@ -111,7 +115,7 @@
             ? ` / ${formatDuration(repoTimers[repoKey].lastSuccessDuration)}`
             : "";
 
-          targetEl.textContent = `⏰ ${base}${comparison}`;
+          targetEl.textContent = `⏱ ${base}${comparison}`;
         }, 1000);
       }
 
@@ -135,7 +139,6 @@
         const shortRepoName = repo.split("/")[1];
 
         let el = repoElements[repo];
-        let isNew = false;
 
         if (!el) {
           el = document.createElement("div");
@@ -147,14 +150,12 @@
           `;
           reposEl.appendChild(el);
           repoElements[repo] = el;
-          isNew = true;
         } else {
           el.className = `repo ${cssClass}`;
           el.querySelector(".commit-title").href = url;
           el.querySelector(".commit-title").textContent = commitTitle;
         }
 
-        // 💡 Always re-query durationEl AFTER append, regardless of isNew
         const durationEl = el.querySelector(".duration-label");
 
         if (status === "completed") {
@@ -167,7 +168,10 @@
             const start = new Date(created_at);
             const end = new Date(updated_at);
             const duration = (end - start) / 1000;
-            repoTimers[repo] = { ...repoTimers[repo], lastSuccessDuration: duration };
+            if (!repoTimers[repo]) {
+              repoTimers[repo] = {};
+            }
+            repoTimers[repo].lastSuccessDuration = duration;
           }
 
           durationEl.textContent = "";
