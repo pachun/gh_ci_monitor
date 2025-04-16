@@ -17,7 +17,7 @@ class WebhooksController < ApplicationController
         commit: run["head_commit"]["message"],
         url: run["html_url"],
         status: run["status"],
-        conclusion: run["conclusion"]
+        conclusion: run["conclusion"],
       })
     end
 
