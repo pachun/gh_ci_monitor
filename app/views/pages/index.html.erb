@@ -154,14 +154,17 @@
 
         const durationEl = el.querySelector(".duration-label");
 
-        if (status === "completed" && conclusion === "success") {
-          const start = new Date(created_at);
-          const end = new Date(updated_at);
-          const duration = (end - start) / 1000;
-          repoTimers[repo] = { ...repoTimers[repo], lastSuccessDuration: duration };
-
+        if (status === "completed") {
           if (repoTimers[repo]?.interval) {
             clearInterval(repoTimers[repo].interval);
+            delete repoTimers[repo].interval;
+          }
+
+          if (conclusion === "success") {
+            const start = new Date(created_at);
+            const end = new Date(updated_at);
+            const duration = (end - start) / 1000;
+            repoTimers[repo] = { ...repoTimers[repo], lastSuccessDuration: duration };
           }
 
           durationEl.textContent = "";
@@ -169,7 +172,13 @@
 
         if (status === "in_progress" || status === "queued") {
           const startedAt = new Date(created_at);
-          updateTimer(repo, startedAt, durationEl);
+          setTimeout(() => {
+            const elAgain = repoElements[repo];
+            const durationAgain = elAgain?.querySelector(".duration-label");
+            if (durationAgain) {
+              updateTimer(repo, startedAt, durationAgain);
+            }
+          }, 0);
         }
       }
 
