@@ -1,24 +1,16 @@
-# README
+# Github Actions CI Monitor
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+A GitHub Actions CI Monitoring app to keep your projects and their builds top of mind. (Written in rails).
 
-Things you may want to cover:
+![CI Monitor](https://raw.githubusercontent.com/pachun/gh_ci_monitor/main/assets/ci-monitor-screenshot.png)
 
-* Ruby version
+## Usage
 
-* System dependencies
+```bash
+git clone https://github.com/pachun/gh_ci_monitor.git
+cd gh_ci_monitor
+heroku create my-ci-monitor
+git push heroku main
+```
 
-* Configuration
-
-* Database creation
-
-* Database initialization
-
-* How to run the test suite
-
-* Services (job queues, cache servers, search engines, etc.)
-
-* Deployment instructions
-
-* ...
+[MIT License](/LICENSE).
