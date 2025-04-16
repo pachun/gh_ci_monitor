@@ -18,6 +18,8 @@ class WebhooksController < ApplicationController
         url: run["html_url"],
         status: run["status"],
         conclusion: run["conclusion"],
+        created_at: run["created_at"],
+        updated_at: run["updated_at"],
       })
     end
 

@@ -40,7 +40,7 @@
       }
 
       .repo-link {
-        font-size: 1.5vw;
+        font-size: 2.5vw;
         color: #ccc;
         text-decoration: underline;
       }
@@ -77,33 +77,62 @@
       const cable = ActionCable.createConsumer();
       const reposEl = document.getElementById("repos");
       const repoElements = {};
+      const repoTimers = {};
 
       function getStatusClass(status, conclusion) {
         if (status === "in_progress" || status === "queued") return "bg-running";
         if (conclusion === "success") return "bg-success";
         if (conclusion === "failure") return "bg-failure";
-        return "bg-running"; // fallback to yellow for unknown states
+        return "bg-running";
       }
 
       function extractCommitTitle(message) {
         return message.split("\n")[0];
       }
 
+      function formatDuration(seconds) {
+        const h = Math.floor(seconds / 3600).toString().padStart(2, "0");
+        const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, "0");
+        const s = Math.floor(seconds % 60).toString().padStart(2, "0");
+        return `${h}:${m}:${s}`;
+      }
+
+      function updateTimer(repoKey, startTime, targetEl) {
+        if (repoTimers[repoKey]?.interval) {
+          clearInterval(repoTimers[repoKey].interval);
+        }
+
+        repoTimers[repoKey].interval = setInterval(() => {
+          const now = new Date();
+          const elapsed = (now - startTime) / 1000;
+
+          const base = formatDuration(elapsed);
+          const comparison = repoTimers[repoKey].lastSuccessDuration
+            ? ` / ${formatDuration(repoTimers[repoKey].lastSuccessDuration)}`
+            : "";
+
+          targetEl.textContent = `⏰ ${base}${comparison}`;
+        }, 1000);
+      }
+
       function updateRepoView(data) {
         if (placeholderEl) {
           placeholderEl.remove();
         }
-        const { repo, url, status, conclusion, commit, commit_url } = data;
-        let statusText;
-        if (status === "queued") {
-          statusText = "queued";
-        } else if (status === "in_progress") {
-          statusText = "in progress";
-        } else {
-          statusText = "completed";
-        }
+
+        const {
+          repo,
+          url,
+          status,
+          conclusion,
+          commit,
+          created_at,
+          updated_at
+        } = data;
+
         const cssClass = getStatusClass(status, conclusion);
         const commitTitle = extractCommitTitle(commit);
+        const shortRepoName = repo.split("/")[1];
 
         let el = repoElements[repo];
 
@@ -111,22 +140,36 @@
           el = document.createElement("div");
           el.className = `repo ${cssClass}`;
           el.innerHTML = `
-            <div class="repo-name">${repo}</div>
-            <a class="commit-title repo-link" href="${commit_url}" target="_blank">${commitTitle}</a>
-            <a class="repo-link run-link" href="${url}" target="_blank">${statusText}</a>
+            <div class="repo-name">${shortRepoName}</div>
+            <a class="commit-title repo-link" href="${url}" target="_blank">${commitTitle}</a>
+            <div class="duration-label" style="margin-top: 1rem; font-size: 1.2vw;"></div>
           `;
           reposEl.appendChild(el);
           repoElements[repo] = el;
         } else {
           el.className = `repo ${cssClass}`;
-          el.querySelector(".commit-title").href = commit_url;
+          el.querySelector(".commit-title").href = url;
           el.querySelector(".commit-title").textContent = commitTitle;
-          el.querySelector(".commit-title").href = commit_url;
-          el.querySelector(".commit-title").textContent = commitTitle;
+        }
 
-          const runLink = el.querySelector(".run-link");
-          runLink.href = url;
-          runLink.textContent = statusText;
+        const durationEl = el.querySelector(".duration-label");
+
+        if (status === "completed" && conclusion === "success") {
+          const start = new Date(created_at);
+          const end = new Date(updated_at);
+          const duration = (end - start) / 1000;
+          repoTimers[repo] = { ...repoTimers[repo], lastSuccessDuration: duration };
+
+          if (repoTimers[repo]?.interval) {
+            clearInterval(repoTimers[repo].interval);
+          }
+
+          durationEl.textContent = "";
+        }
+
+        if (status === "in_progress" || status === "queued") {
+          const startedAt = new Date(created_at);
+          updateTimer(repo, startedAt, durationEl);
         }
       }
 
