@@ -31,4 +31,6 @@ Settings → Webhooks → Add webhook
 1. Set content type to `application/json`
 1. Under "Which events would you like to trigger this webhook?" check the box for "Let me select individual events" and only check "Workflow runs"
 
-[MIT License](/LICENSE).
+You can use the same URL for multiple projects. The screen will show repo statuses in vertical columns.
+
+[MIT License](/LICENSE)
