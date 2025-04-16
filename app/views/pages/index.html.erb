@@ -135,6 +135,7 @@
         const shortRepoName = repo.split("/")[1];
 
         let el = repoElements[repo];
+        let isNew = false;
 
         if (!el) {
           el = document.createElement("div");
@@ -146,12 +147,14 @@
           `;
           reposEl.appendChild(el);
           repoElements[repo] = el;
+          isNew = true;
         } else {
           el.className = `repo ${cssClass}`;
           el.querySelector(".commit-title").href = url;
           el.querySelector(".commit-title").textContent = commitTitle;
         }
 
+        // 💡 Always re-query durationEl AFTER append, regardless of isNew
         const durationEl = el.querySelector(".duration-label");
 
         if (status === "completed") {
@@ -172,13 +175,7 @@
 
         if (status === "in_progress" || status === "queued") {
           const startedAt = new Date(created_at);
-          setTimeout(() => {
-            const elAgain = repoElements[repo];
-            const durationAgain = elAgain?.querySelector(".duration-label");
-            if (durationAgain) {
-              updateTimer(repo, startedAt, durationAgain);
-            }
-          }, 0);
+          updateTimer(repo, startedAt, durationEl);
         }
       }
 
